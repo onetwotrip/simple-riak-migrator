@@ -20,5 +20,12 @@
     "async": "^2.1.4",
     "commander": "^2.9.0",
     "request": "^2.79.0"
-  }
+  },
+  "contributors": [{
+    "name": "Alexey Sutyagin",
+    "email": "alesutt@gmail.com"
+  }, {
+    "name": "amgorb",
+    "url": "https://github.com/amgorb"
+  }]
 }

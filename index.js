@@ -6,7 +6,7 @@ var request = require('request');
 var url = require('url');
 
 program
-    .version('0.0.8')
+    .version('0.0.2')
     .usage('[options] bucketName')
     .option('-H, --host [host]','specify the host (default: localhost)')
     .option('-p, --port [port]','specify the post (default: 8098)')

@@ -1,31 +1,36 @@
 {
-  "name": "simple-riak-migrator",
+  "name": "riak_tools",
   "version": "0.0.1",
-  "description": "Very simple tools for riak migration",
+  "description": "Tools for riak db",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onetwotrip/simple-riak-migrator.git"
+    "url": "git+https://github.com/you-think-you-are-special/riak_tools.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Litvinov Alexander",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/onetwotrip/simple-riak-migrator/issues"
+    "url": "https://github.com/you-think-you-are-special/riak_tools/issues"
   },
-  "homepage": "https://github.com/onetwotrip/simple-riak-migrator#readme",
+  "homepage": "https://github.com/you-think-you-are-special/riak_tools/blob/master/README.md",
   "dependencies": {
-    "async": "^2.1.4",
-    "commander": "^2.9.0",
-    "request": "^2.79.0"
+    "basho-riak-client": "2.4.0",
+    "byline": "5.0.0",
+    "commander": "2.9.0",
+    "request": "2.79.0",
+    "through2": "2.0.3"
   },
-  "contributors": [{
-    "name": "Alexey Sutyagin",
-    "email": "alesutt@gmail.com"
-  }, {
-    "name": "amgorb",
-    "url": "https://github.com/amgorb"
-  }]
+  "contributors": [
+    {
+      "name": "Litvinov Alexander",
+      "email": "sanderlimail@gmail.com"
+    },
+    {
+      "name": "Alexey Sutyagin",
+      "email": "alesutt@gmail.com"
+    }
+  ]
 }

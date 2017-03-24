@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const LimitedParallelStream = require('./limited_parallel_stream').LimitedParallelStream;
+const LimitedParallelStream = require('./src/modules/limited_parallel_stream').LimitedParallelStream;
 const byline = require('byline'); //@todo replace this module
 const riak = require('./riak');
 const Riak = require('basho-riak-client');

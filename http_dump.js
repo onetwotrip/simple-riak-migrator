@@ -43,7 +43,7 @@ request(`${baseUrl}?keys=stream`)
 		console.info('\tKeys saved on disk ✔');
 
 			//Start saving all data
-			let stream = fs.createReadStream(__dirname + '/keys');
+			let stream = fs.createReadStream(keysPath);
 			stream = byline.createStream(stream);
 			stream
 				.pipe(new LimitedParallelStream(program.concurrency, function(key, enc, done){

@@ -15,7 +15,7 @@ program
 	.option('-H, --host [host]', 'specify the host (default: http://127.0.0.1)', 'http://127.0.0.1')
 	.option('-p, --port [port]', 'specify the post (default: 8098)', 8098)
 	.option('-c, --concurrency [concurrency]', 'specify the concurrency (default: 100)', 100)
-	.option('-f, --folder [folder]', 'specify the folder of dump (default: __dirname)', __dirname)
+	.option('-f, --file [file]', 'specify the folder of dump (default: __dirname + /dump)', __dirname + '/dump')
 	.parse(process.argv);
 
 if(!program.args.length) {
@@ -67,7 +67,7 @@ request(`${baseUrl}?keys=stream`)
 					done()
 				});
 			}))
-			.pipe(fs.createWriteStream(path.resolve(program.folder, '/dump')))
+			.pipe(fs.createWriteStream(path.resolve(program.file)))
 			.on('finish', () =>{
 				console.info('\tAll data saved on disk ✔')
 			})

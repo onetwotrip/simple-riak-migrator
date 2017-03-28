@@ -7,6 +7,7 @@ const keysPath = __dirname + '/keys';
 const LimitedParallelStream = require('./src/modules/limited_parallel_stream').LimitedParallelStream;
 const byline = require('byline');
 const program = require('commander');
+const path = require('path');
 
 program
 	.version('0.0.1')
@@ -14,6 +15,7 @@ program
 	.option('-H, --host [host]', 'specify the host (default: http://127.0.0.1)', 'http://127.0.0.1')
 	.option('-p, --port [port]', 'specify the post (default: 8098)', 8098)
 	.option('-c, --concurrency [concurrency]', 'specify the concurrency (default: 100)', 100)
+	.option('-f, --folder [folder]', 'specify the folder of dump (default: __dirname)', __dirname)
 	.parse(process.argv);
 
 if(!program.args.length) {
@@ -29,13 +31,15 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
  */
 
 console.info('Dump started ^_^');
+let bigChunk = '';
 request(`${baseUrl}?keys=stream`)
-	.pipe(through2.obj(function(chunk, enc, cb){
+	.pipe(through2.obj(chunk, enc, cb =>{
 		let data;
 		try{
 			data = JSON.parse(chunk.toString());
 		}
 		catch(e) {
+			bigChunk += chunk;
 			console.error('Not valid JSON', chunk.toString());
 			return cb();
 		}
@@ -65,7 +69,7 @@ request(`${baseUrl}?keys=stream`)
 					done()
 				});
 			}))
-			.pipe(fs.createWriteStream(__dirname + '/dump'))
+			.pipe(fs.createWriteStream(path.resolve(program.folder, '/dump')))
 			.on('finish', () =>{
 				console.info('\tAll data saved on disk ✔')
 			})

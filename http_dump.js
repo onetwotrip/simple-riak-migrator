@@ -31,7 +31,14 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
 console.info('Dump started ^_^');
 request(`${baseUrl}?keys=stream`)
 	.pipe(through2.obj(function(chunk, enc, cb){
-		const data = JSON.parse(chunk.toString());
+		try{
+			const data = JSON.parse(chunk.toString());
+		}
+		catch(e) {
+			console.error('Not valid JSON', chunk.toString());
+			return cb();
+		}
+
 		if(data.keys && data.keys.length > 0) {
 			this.push(data.keys.join('\n') + '\n');
 		}
@@ -42,13 +49,13 @@ request(`${baseUrl}?keys=stream`)
 	.on('finish', () =>{
 		console.info('\tKeys saved on disk ✔');
 
-			//Start saving all data
-			let stream = fs.createReadStream(keysPath);
-			stream = byline.createStream(stream);
-			stream
-				.pipe(new LimitedParallelStream(program.concurrency, function(key, enc, done){
-					const url = `${baseUrl}${key}`;
-					request(url, (err, data) =>{
+		//Start saving all data
+		let stream = fs.createReadStream(keysPath);
+		stream = byline.createStream(stream);
+		stream
+			.pipe(new LimitedParallelStream(program.concurrency, function(key, enc, done){
+				const url = `${baseUrl}${key}`;
+				request(url, (err, data) =>{
 					if(!err && data.statusCode === 200) {
 						this.push(`${key}\t${data.body}\t${data.headers['content-type']}\n`);
 					} else {
@@ -56,9 +63,9 @@ request(`${baseUrl}?keys=stream`)
 					}
 					done()
 				});
-				}))
-				.pipe(fs.createWriteStream(__dirname + '/dump'))
-				.on('finish', () =>{
+			}))
+			.pipe(fs.createWriteStream(__dirname + '/dump'))
+			.on('finish', () =>{
 				console.info('\tAll data saved on disk ✔')
 			})
 			.on('err', (err) =>{

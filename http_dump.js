@@ -31,8 +31,9 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
 console.info('Dump started ^_^');
 request(`${baseUrl}?keys=stream`)
 	.pipe(through2.obj(function(chunk, enc, cb){
+		let data;
 		try{
-			const data = JSON.parse(chunk.toString());
+			data = JSON.parse(chunk.toString());
 		}
 		catch(e) {
 			console.error('Not valid JSON', chunk.toString());

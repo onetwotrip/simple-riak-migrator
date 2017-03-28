@@ -15,7 +15,7 @@ program
 	.parse(process.argv);
 
 if(!program.args.length) {
-	console.error('\nBucket is required!');
+	console.log('\nBucket is required!');
 	program.help();
 }
 
@@ -39,6 +39,6 @@ request(baseUrl + bucket + '/?keys=stream')
 
 	})
 	.on('error', (e) =>{
-		console.error(e)
+		console.log(e)
 	});
 

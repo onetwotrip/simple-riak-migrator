@@ -23,7 +23,7 @@ program
 	.parse(process.argv);
 
 if(!program.args.length) {
-	console.error('\nBucket is required!');
+	console.log('\nBucket is required!');
 	program.help();
 }
 
@@ -78,12 +78,12 @@ riak.onReady(program.host, program.port, (err, client) =>{
 					console.info('\tAll data saved on disk ✔')
 				})
 				.on('error', (e) =>{
-					console.error(e)
+					console.log(e)
 				});
 
 		})
 		.on('error', (e) =>{
-			console.error(e)
+			console.log(e)
 		});
 
 

@@ -19,7 +19,7 @@ program
 	.parse(process.argv);
 
 if(!program.args.length) {
-	console.error('\nBucket is required!');
+	console.log('\nBucket is required!');
 	program.help();
 }
 
@@ -38,7 +38,7 @@ request({url: `${baseUrl}?keys=stream`})
 			data = JSON.parse(chunk.toString());
 		}
 		catch(e) {
-			console.error('Not valid JSON', chunk.toString());
+			console.log('Not valid JSON', chunk.toString());
 			return cb();
 		}
 
@@ -62,7 +62,7 @@ request({url: `${baseUrl}?keys=stream`})
 					if(!err && data.statusCode === 200) {
 						this.push(`${key}\t${data.body}\t${data.headers['content-type']}\n`);
 					} else {
-						console.error(url, err ? err.message : '', 'statusCode:', data ? data.statusCode : 200);
+						console.log(url, err ? err.message : '', 'statusCode:', data ? data.statusCode : 200);
 					}
 					done()
 				});
@@ -72,10 +72,10 @@ request({url: `${baseUrl}?keys=stream`})
 				console.info('\tAll data saved on disk ✔')
 			})
 			.on('error', (err) =>{
-				console.error(err)
+				console.log(err)
 			})
 
 	})
 	.on('error', (e) =>{
-		console.error(e)
+		console.log(e)
 	});

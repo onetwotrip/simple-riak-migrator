@@ -71,7 +71,7 @@ request(`${baseUrl}?keys=stream`)
 			.on('finish', () =>{
 				console.info('\tAll data saved on disk ✔')
 			})
-			.on('err', (err) =>{
+			.on('error', (err) =>{
 				console.error(err)
 			})
 

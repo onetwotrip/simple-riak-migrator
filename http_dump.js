@@ -32,7 +32,7 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
 
 console.info('Dump started ^_^');
 request(`${baseUrl}?keys=stream`)
-	.pipe(through2.obj(function(chunk, enc, cb){
+	.pipe(through2({ objectMode: true, allowHalfOpen: false }, function(chunk, enc, cb){
 		let data;
 		try{
 			data = JSON.parse(chunk.toString());

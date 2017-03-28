@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const request = require('request');
+const request = require('requestretry');
 const fs = require('fs');
 const through2 = require('through2');
 const keysPath = __dirname + '/keys';
@@ -31,7 +31,7 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
  */
 
 console.info('Dump started ^_^');
-request(`${baseUrl}?keys=stream`)
+request({url: `${baseUrl}?keys=stream`})
 	.pipe(through2({ objectMode: true, allowHalfOpen: false, highWaterMark: 50 }, function(chunk, enc, cb){
 		let data;
 		try{
@@ -58,7 +58,7 @@ request(`${baseUrl}?keys=stream`)
 		stream
 			.pipe(new LimitedParallelStream(program.concurrency, function(key, enc, done){
 				const url = `${baseUrl}${key}`;
-				request(url, (err, data) =>{
+				request({url: url}, (err, data) =>{
 					if(!err && data.statusCode === 200) {
 						this.push(`${key}\t${data.body}\t${data.headers['content-type']}\n`);
 					} else {

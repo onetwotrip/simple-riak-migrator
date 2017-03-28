@@ -62,7 +62,7 @@ request(`${baseUrl}?keys=stream`)
 					if(!err && data.statusCode === 200) {
 						this.push(`${key}\t${data.body}\t${data.headers['content-type']}\n`);
 					} else {
-						this.emit('error', err)
+						console.error(url, err.message);
 					}
 					done()
 				});

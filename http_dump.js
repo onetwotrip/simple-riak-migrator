@@ -31,15 +31,13 @@ const baseUrl = `${program.host}:${program.port}/riak/${bucket}/`;
  */
 
 console.info('Dump started ^_^');
-let bigChunk = '';
 request(`${baseUrl}?keys=stream`)
-	.pipe(through2.obj(chunk, enc, cb =>{
+	.pipe(through2.obj((chunk, enc, cb) =>{
 		let data;
 		try{
 			data = JSON.parse(chunk.toString());
 		}
 		catch(e) {
-			bigChunk += chunk;
 			console.error('Not valid JSON', chunk.toString());
 			return cb();
 		}

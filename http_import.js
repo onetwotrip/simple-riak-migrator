@@ -3,9 +3,8 @@
 const fs = require('fs');
 const LimitedParallelStream = require('./src/modules/limited_parallel_stream').LimitedParallelStream;
 const byline = require('byline'); //@todo replace this module
-const riak = require('./riak');
-const Riak = require('basho-riak-client');
 const program = require('commander');
+const request = require('requestretry');
 
 program
 	.version('0.0.1')
@@ -22,41 +21,31 @@ if(!program.args.length) {
 }
 
 const bucket = program.args[0];
-
-let stream = fs.createReadStream(program.file);
-stream = byline.createStream(stream);
-
 console.info('Import started');
 
-riak.onReady(program.host, program.port, (err, client) =>{
-	if(err) {
-		throw err
-	}
 
-	stream
-		.pipe(new LimitedParallelStream(program.concurrency, function(row, enc, done){
-			row = row.toString().split('\t');
-			const value = new Riak.Commands.KV.RiakObject();
-			value.setContentType(row[2]);
-			value.setValue(row[1]);
+byline.createStream(stream)
+	.pipe(new LimitedParallelStream(program.concurrency, function(row, enc, done){
+		row = row.toString().split('\t');
+		const key = row[0];
+		const value = row[1];
+		const contentType = row[2];
 
-			client.storeValue({
-				bucket: bucket,
-				key: row[0],
-				value: value
-			}, (err) =>{
-				if(err) {
-					return this.emit('error', err)
-				}
-				done()
-			})
 
-		}))
-		.on('error', (e) =>{
-			console.log(e);
+		request({
+			url: `${program.host}:${program.port}/${bucket}/${key}`,
+			method: 'PUT',
+			headers: {
+				'Content-Type': contentType
+			}
 		})
-		.on('finish', () =>{
-			console.info('\tImport completed ✔');
-			process.exit(0);
-		});
-});
+			.then(() => done())
+			.catch(e => console.log(e));
+	}))
+	.on('error', (e) =>{
+		console.log(e);
+	})
+	.on('finish', () =>{
+		console.info('\tImport completed ✔');
+		process.exit(0);
+	});

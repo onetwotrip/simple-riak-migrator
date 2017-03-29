@@ -24,7 +24,7 @@ const bucket = program.args[0];
 console.info('Import started');
 
 
-byline.createStream(stream)
+byline.createStream(fs.createReadStream(program.file))
 	.pipe(new LimitedParallelStream(program.concurrency, function(row, enc, done){
 		row = row.toString().split('\t');
 		const key = row[0];

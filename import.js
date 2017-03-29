@@ -13,6 +13,7 @@ program
 	.option('-H, --host [host]', 'specify the host (default: http://127.0.0.1)', 'http://127.0.0.1')
 	.option('-p, --port [port]', 'specify the post (default: 8098)', 8098)
 	.option('-c, --concurrency [concurrency]','specify the concurrency (default: 100)', 100)
+	.option('-f, --file [file]', 'specify the folder of dump (default: __dirname + /dump)', __dirname + '/dump')
 	.parse(process.argv);
 
 if(!program.args.length) {
@@ -22,7 +23,7 @@ if(!program.args.length) {
 
 const bucket = program.args[0];
 
-let stream = fs.createReadStream(__dirname + '/dump');
+let stream = fs.createReadStream(program.file);
 stream = byline.createStream(stream);
 
 console.info('Import started');

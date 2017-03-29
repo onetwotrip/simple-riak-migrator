@@ -37,7 +37,8 @@ byline.createStream(stream)
 			method: 'PUT',
 			headers: {
 				'Content-Type': contentType
-			}
+			},
+			body: value
 		})
 			.then(() => done())
 			.catch(e => console.log(e));

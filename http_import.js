@@ -30,10 +30,10 @@ byline.createStream(fs.createReadStream(program.file))
 		const key = row[0];
 		const value = row[1];
 		const contentType = row[2];
-
-
+		const url = `${program.host}:${program.port}/riak/${bucket}/${key}`;
+		console.error(url);
 		request({
-			url: `${program.host}:${program.port}/${bucket}/${key}`,
+			url: url,
 			method: 'PUT',
 			headers: {
 				'Content-Type': contentType

@@ -60,6 +60,11 @@ function importToBucket() {
 
                 entry = JSON.parse(entry);
 
+                if (!entry.data) {
+                    console.log('Key: %j is empty', entry.key);
+                    return cb();
+                }  
+
                 if(typeof entry.data !== typeof {} && typeof entry.data != 'number' ){
                     entry.data = new Buffer(entry.data, 'base64');
                     entry.headers['content-encoding'] = entry.headers['content-encoding'] || 'gzip';

@@ -1,6 +1,6 @@
 {
   "name": "simple-riak-migrator",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Very simple tools for riak migration",
   "main": "index.js",
   "scripts": {
@@ -19,13 +19,18 @@
   "dependencies": {
     "async": "^2.1.4",
     "commander": "^2.9.0",
+    "lodash.merge": "4.6.2",
+    "lodash.mergewith": "4.6.2",
     "request": "^2.79.0"
   },
-  "contributors": [{
-    "name": "Alexey Sutyagin",
-    "email": "alesutt@gmail.com"
-  }, {
-    "name": "amgorb",
-    "url": "https://github.com/amgorb"
-  }]
+  "contributors": [
+    {
+      "name": "Alexey Sutyagin",
+      "email": "alesutt@gmail.com"
+    },
+    {
+      "name": "amgorb",
+      "url": "https://github.com/amgorb"
+    }
+  ]
 }

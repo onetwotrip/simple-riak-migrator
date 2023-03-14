@@ -39,3 +39,4 @@ jspm_packages
 # Idea service file
 .idea
 .DS_Store
+.vscode

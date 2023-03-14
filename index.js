@@ -1,204 +1,196 @@
 #!/usr/bin/env node
-
-var program = require('commander');
-var async = require('async');
-var request = require('request');
-var url = require('url');
+const program = require('commander');
+const async = require('async');
+const request = require('request');
+const fs = require('fs');
+const mergeWith = require('lodash.mergewith');
 
 program
-    .version('0.0.3')
-    .usage('[options] bucketName')
-    .option('-H, --host [host]','specify the host (default: localhost)')
-    .option('-p, --port [port]','specify the post (default: 8098)')
-    .option('-f, --file [FileName]','specify the file name (default: [bucket].json)')
-    .option('-i, --import','import mode (instead of reading from bucket entries will be written to bucket)')
-    .option('-c, --concurrency [concurrency]','specify the concurrency (default: 20)')
-    .option('-m, --meta [meta]', 'import with meta (default: False)')
-    .option('-P, --pretty [pretty]', 'pretty stringify of json (default: False)')
-    .option('--delete', 'delete the keys as they are exported (DANGER: possible data loss)')
-    .parse(process.argv);
-if(!program.args.length) {
-    program.help();
+  .version('0.1.0')
+  .usage('[options] bucketName')
+  .option('-H, --host [host]', 'specify the host (default: localhost)')
+  .option('-p, --port [port]', 'specify the post (default: 8098)')
+  .option('-f, --file [FileName]', 'specify the file name (default: [bucket].json)')
+  .option('-i, --import', 'import mode (instead of reading from bucket entries will be written to bucket)')
+  .option('-c, --concurrency [concurrency]', 'specify the concurrency (default: 20)')
+  .parse(process.argv);
+
+if (!program.args.length) {
+  program.help();
 }
-var bucket = program.args;
+
+let count = 0;
+let openWrites = 0;
+let receivedAll = false;
+const bucket = program.args;
 program.host = program.host || 'localhost';
 program.port = program.port || '8098';
-program.file = program.file || bucket+'.json';
+program.file = program.file || `${bucket}.json`;
 program.concurrency = !isNaN(program.concurrency) ? parseInt(program.concurrency, 10) : 20;
-program.meta = (program.meta==='true')  || false;
-program.pretty = (program.pretty==='true') || false;
-var count = 0;
-var openWrites = 0;
-var fs = require('fs');
-var riakUrl = 'http://' + program.host + ":" + program.port + '/riak';
 
-if (program.import) {
-    importToBucket();
-} else {
-    if (program.delete) {
-        console.log('WARNING: keys will be deleted as they are exported');
-    }
+const riakUrl = `http://${program.host}:${program.port}/riak`;
 
-    exportFromBucket();
-}
-
-function importToBucket() {
-    if (!fs.existsSync(program.file)) {
-        throw new Error('the import file does not exist');
-    }
-
-    fs.readFile(program.file, 'utf8', function (err,data) {
-        if (err) {
-            return console.log(err);
-        }
-        var entries = data.split('\r\n');
-        async.eachLimit(entries, program.concurrency, function(entry, cb) {
-            try{
-                if(!entry || !entry.trim()){
-                    return cb();
-                }
-
-                entry = JSON.parse(entry);
-
-                if (!entry.data) {
-                    console.log('Key: %j is empty', entry.key);
-                    return cb();
-                }  
-
-                if(typeof entry.data !== typeof {} && typeof entry.data != 'number' ){
-                    entry.data = new Buffer(entry.data, 'base64');
-                    entry.headers['content-encoding'] = entry.headers['content-encoding'] || 'gzip';
-                }
-                else{
-                    entry.data = JSON.stringify(entry.data);
-                }
-            }
-            catch(err){
-                return cb(err);
-            }
-
-            var keyUrl = createKey(entry.key);
-
-            console.log('inserting entry with key %j', entry.key);
-
-            request(keyUrl, {
-                method: 'PUT',
-                headers: entry.headers,
-                body: entry.data
-            }, function(err, response){
-                if(err || (response && response.statusCode !== 204)){
-                    console.log(err, response && response.statusCode);
-                    return cb(err || (response && response.statusCode));
-                }
-                else{
-                    return cb();
-                }
-            });
-        }, function(err) {
-            if (err) {
-                return console.log(err);
-            }
-            return console.log('%j entries inserted into bucket %j', entries.length, bucket);
-        });
-    });
-}
-
-var receivedAll = false;
-var q = async.queue(processKey, program.concurrency);
-q.drain = end;
-
-function exportFromBucket() {
-    if (fs.existsSync(program.file)) {
-        throw new Error('the output file already exists');
-    }
-    console.log('fetching bucket '+bucket+' from '+program.host+':'+program.port);
-    var bucketKeysUrl = [riakUrl, bucket].join('/') + '?keys=stream';
-    console.log(bucketKeysUrl);
-    request(bucketKeysUrl, function(err){
-        if (err) {
-            console.log('failed to fetch keys');
-            console.log(err);
-        }
-    }).on('data', function(data) {
-        // decompressed data as it is received
-        var parsedData = isValidJSON(data);
-        if(parsedData && parsedData.keys){
-            handleKeys(parsedData.keys);
-        }
-    }).on('end', function(){
-        console.log('received all keys');
-        receivedAll = true;
-    });
-}
-
-function end() {
-    if (!receivedAll) {
-        return;
-    }
-    if (count<=0) {
-        console.log('nothing exported');
-    } else {
-        console.log('finished export of '+count+' keys to '+program.file);
-    }
-}
-
-function handleKeys(keys) {
-    count+=keys.length;
-    for (var i=0;i<keys.length;i++) {
-        var key = keys[i];
-        openWrites++;
-        q.push(key, function() {
-            openWrites--;
-        });
-    }
-    console.log('queue size: ' + q.length());
-}
-
-var isValidJSON = function(data){
-    try{
-        return JSON.parse(data);
-    }
-    catch(err){
-        return false
-    }
+const isValidJSON = (data) => {
+  try {
+    return JSON.parse(data);
+  } catch (err) {
+    return false;
+  }
 };
 
-var createKey = function(key){
-    return [riakUrl, bucket, encodeURIComponent(key)].join('/');
+const createKey = (key) => {
+  return [riakUrl, bucket, encodeURIComponent(key)].join('/');
 };
 
 function processKey(key, cb) {
-    console.log('exporting key ' + key);
-    var keyUrl = createKey(key);
+  console.log('[INFO]:', `exporting key ${key}`);
+  const keyUrl = createKey(key);
 
-    request(keyUrl, {encoding: null}, function(err, response, body){
-        if(err || response.statusCode !== 200){
-            console.log('ERROR', err, response && response.statusCode, keyUrl);
-            return cb();
+  request(keyUrl, { encoding: null }, function (err, response, body) {
+    if (err || response.statusCode !== 200) {
+      console.log('[ERROR]:', err, response.statusCode, keyUrl);
+      return cb();
+    }
+
+    const entry = `${JSON.stringify({
+      key,
+      headers: response.headers,
+      data: isValidJSON(body) || body.toString('base64'),
+      v: '4be4152cd7194cb0b56ef818f95c3e58'
+    })}\r\n`;
+
+    fs.appendFileSync(program.file, entry);
+
+    return cb();
+  });
+}
+
+const q = async.queue(processKey, program.concurrency);
+q.drain = () => {
+  if (!receivedAll) {
+    return;
+  }
+
+  console.log('[INFO]:', `finished export of ${count} keys to ${program.file}`);
+};
+
+function importToBucket() {
+  if (!fs.existsSync(program.file)) {
+    throw new Error('the import file does not exist');
+  }
+
+  fs.readFile(program.file, 'utf8', (err, data) => {
+    if (err) {
+      console.log('[ERROR]:', err);
+      return;
+    }
+    const entries = data.split('\r\n');
+
+    async.eachLimit(entries, program.concurrency, (entry, cb) => {
+      try {
+        if (!entry?.trim()) {
+          cb();
+          return;
         }
 
-        var out = {
-            key: key,
-            headers: response.headers
-        };
+        entry = JSON.parse(entry);
 
-        var data = isValidJSON(body);
+        if (entry.props) {
+          entry.data = JSON.stringify({props: entry.props});
+          entry.headers = {
+            'content-type': 'application/json',
+          };
+          entry.url = createKey('props');
+        } else {
+          if (!entry.data) {
+            console.warn('[WARN]:', `Key: ${entry.key} is empty`);
+            cb();
+            return;
+          }
 
-        if(data){
-            out.data = data;
+          if (!['Object', 'number'].includes(typeof entry.data)) {
+            entry.data = new Buffer(entry.data, 'base64');
+            entry.headers['content-encoding'] = entry.headers['content-encoding'] || 'gzip';
+          } else {
+            entry.data = JSON.stringify(entry.data);
+          }
+
+          entry.url = createKey(entry.key);
         }
-        else{
-            out.data = body.toString('base64');
+      } catch (err) {
+        cb(err);
+      }
+
+      console.log('[INFO]:', `Inserting ${entry.url}`);
+
+      request(entry.url, {
+        method: 'PUT',
+        headers: entry.headers,
+        body: entry.data,
+      }, (err, response) => {
+        if (err || response?.statusCode !== 204) {
+          cb(err || JSON.stringify(response));
+          return;
         }
-
-        var options = [out];
-
-        if(program.pretty){
-            options = options.concat([null, '\t']);
-        }
-
-        fs.appendFileSync(program.file, JSON.stringify.apply(this, options) + '\r\n');
-
-        return cb();
+        cb();
+      });
+    }, (err) => {
+      if (err) {
+        console.log('[ERROR]:', err);
+        return;
+      }
+      console.log('[INFO]:', `${entries.length} entries inserted into bucket ${bucket}`);
     });
+  });
+}
+
+function exportFromBucket() {
+  if (fs.existsSync(program.file)) {
+    throw new Error('the output file already exists');
+  }
+  const bucketKeysUrl = `${[riakUrl, bucket].join('/')}?keys=stream`;
+  console.log('[INFO]:', `fetching keys: ${bucketKeysUrl}`);
+
+  request(bucketKeysUrl, (err) => {
+    if (err) {
+      console.log('[ERROR]:', `failed to fetch keys: ${err}`);
+    }
+  }).on('data', (data) => {
+    const dataArr = `${data}`.replaceAll('}{', '}~~{').split('~~');
+    const parsedData = dataArr.reduce((acc, cur) => {
+      const chunk = isValidJSON(cur);
+      if (!chunk) {
+        console.log('[ERROR]:', `Broken chunk: ${cur}`);
+      } else {
+        acc = mergeWith(acc, chunk, (dst, src) => {
+          if (dst instanceof Array) {
+            return dst.concat(src);
+          }
+        });
+      }
+      return acc;
+    }, {});
+
+    if (parsedData.props) {
+      fs.appendFileSync(program.file, `${JSON.stringify(parsedData)}\r\n`);
+    } else if (parsedData.keys) {
+      count += parsedData.keys.length;
+      parsedData.keys.forEach(k => {
+        openWrites++;
+        q.push(k, () => openWrites--);
+      });
+    } else {
+      console.log('[ERROR]:', `Unreachable code: ${JSON.stringify(parsedData)}`);
+    }
+  }).on('end', () => {
+    console.log('[INFO]:', 'received all keys');
+    receivedAll = true;
+  });
+}
+
+// --
+if (program.import) {
+  importToBucket();
+} else {
+  exportFromBucket();
 }

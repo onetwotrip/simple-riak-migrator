@@ -45,7 +45,7 @@ for BUCKET in $(cat buckets.txt); do
   fi
 done
 
-echo "*** ARCIVE ***"
+echo "*** ARCHIVE ***"
 echo "creating $TARNAME ..."
 tar -C ${BACKUP_DIR}/../ -cz ${DATE}_js > ${BACKUP_DIR}/${TARNAME}
 

@@ -151,16 +151,20 @@ function exportFromBucket() {
   const bucketKeysUrl = `${[riakUrl, bucket].join('/')}?keys=stream`;
   console.log('[INFO]:', `fetching keys: ${bucketKeysUrl}`);
 
+  let buffer = '';
+
   request(bucketKeysUrl, (err) => {
     if (err) {
       console.log('[ERROR]:', `failed to fetch keys: ${err}`);
     }
   }).on('data', (data) => {
-    const dataArr = `${data}`.replaceAll('}{', '}~~{').split('~~');
+    let validJson = true;
+    const dataArr = `${buffer}${data}`.replaceAll('}{', '}~~{').split('~~');
     const parsedData = dataArr.reduce((acc, cur) => {
       const chunk = isValidJSON(cur);
       if (!chunk) {
-        console.log('[ERROR]:', `Broken chunk: ${cur}`);
+        console.log('[WARN]:', `Broken chunk: ${cur}`);
+        validJson = false;
       } else {
         acc = mergeWith(acc, chunk, (dst, src) => {
           if (dst instanceof Array) {
@@ -170,6 +174,12 @@ function exportFromBucket() {
       }
       return acc;
     }, {});
+
+    if (!validJson) {
+      buffer += data;
+      return;
+    }
+    buffer = '';
 
     if (parsedData.props) {
       fs.appendFileSync(program.file, `${JSON.stringify(parsedData)}\r\n`);

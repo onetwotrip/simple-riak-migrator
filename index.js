@@ -13,6 +13,7 @@ program
   .option('-f, --file [FileName]', 'specify the file name (default: [bucket].json)')
   .option('-i, --import', 'import mode (instead of reading from bucket entries will be written to bucket)')
   .option('-c, --concurrency [concurrency]', 'specify the concurrency (default: 20)')
+  .option('-O, --only-keys', 'export Only keys')
   .parse(process.argv);
 
 if (!program.args.length) {
@@ -25,7 +26,8 @@ let receivedAll = false;
 const bucket = program.args;
 program.host = program.host || 'localhost';
 program.port = program.port || '8098';
-program.file = program.file || `${bucket}.json`;
+program.onlyKeys = program.onlyKeys || false;
+program.file = program.file || (program.onlyKeys ? `${bucket}_keys.json` : `${bucket}.json`);
 program.concurrency = !isNaN(program.concurrency) ? parseInt(program.concurrency, 10) : 20;
 
 const riakUrl = `http://${program.host}:${program.port}/riak`;
@@ -43,10 +45,16 @@ const createKey = (key) => {
 };
 
 function processKey(key, cb) {
-  console.log('[INFO]:', `exporting key ${key}`);
-  const keyUrl = createKey(key);
+  if(program.onlyKeys) {
+    requestMethod = 'head';
+    console.log('[INFO]:', `exporting only key ${key}`);
+  } else {
+    requestMethod = 'get';
+    console.log('[INFO]:', `exporting full data from key ${key}`);
+  }
 
-  request(keyUrl, { encoding: null }, function (err, response, body) {
+  const keyUrl = createKey(key);
+  request(keyUrl, { encoding: null, method: requestMethod }, function (err, response, body) {
     if (err || response.statusCode !== 200) {
       console.log('[ERROR]:', err, response.statusCode, keyUrl);
       return cb();
@@ -84,8 +92,8 @@ function importToBucket() {
       console.log('[ERROR]:', err);
       return;
     }
-    const entries = data.split('\r\n');
 
+    const entries = data.split('\r\n');
     async.eachLimit(entries, program.concurrency, (entry, cb) => {
       try {
         if (!entry?.trim()) {
@@ -94,7 +102,6 @@ function importToBucket() {
         }
 
         entry = JSON.parse(entry);
-
         if (entry.props) {
           entry.data = JSON.stringify({props: entry.props});
           entry.headers = {
@@ -148,11 +155,11 @@ function exportFromBucket() {
   if (fs.existsSync(program.file)) {
     throw new Error('the output file already exists');
   }
+
   const bucketKeysUrl = `${[riakUrl, bucket].join('/')}?keys=stream`;
   console.log('[INFO]:', `fetching keys: ${bucketKeysUrl}`);
 
   let buffer = '';
-
   request(bucketKeysUrl, (err) => {
     if (err) {
       console.log('[ERROR]:', `failed to fetch keys: ${err}`);
@@ -172,6 +179,7 @@ function exportFromBucket() {
           }
         });
       }
+
       return acc;
     }, {});
 
@@ -179,6 +187,7 @@ function exportFromBucket() {
       buffer += data;
       return;
     }
+
     buffer = '';
 
     if (parsedData.props) {

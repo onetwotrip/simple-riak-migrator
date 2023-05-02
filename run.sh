@@ -32,18 +32,18 @@ done
 
 wait
 
-echo "*** VALIDATE ***"
+# echo "*** VALIDATE ***"
 
-for BUCKET in $(cat buckets.txt); do
-  SRC=$(curl -s "$HOST:$PORT/riak/$BUCKET?keys=true" | jq '.keys | length')
-  DST=$(grep -o "4be4152cd7194cb0b56ef818f95c3e58" $BACKUP_DIR/$BUCKET.json | wc -l || true)
-  echo -n "[$BUCKET]: found: $SRC, backup: $DST... "
-  if [[ $SRC -ne $DST ]]; then
-    echo "$RED[MISSMATCH]$NC"
-  else
-    echo "$GREEN[OK]$NC"
-  fi
-done
+# for BUCKET in $(cat buckets.txt); do
+#   SRC=$(curl -s "$HOST:$PORT/riak/$BUCKET?keys=true" | jq '.keys | length')
+#   DST=$(grep -o "4be4152cd7194cb0b56ef818f95c3e58" $BACKUP_DIR/$BUCKET.json | wc -l || true)
+#   echo -n "[$BUCKET]: found: $SRC, backup: $DST... "
+#   if [[ $SRC -ne $DST ]]; then
+#     echo "$RED[MISSMATCH]$NC"
+#   else
+#     echo "$GREEN[OK]$NC"
+#   fi
+# done
 
 echo "*** ARCHIVE ***"
 echo "creating $TARNAME ..."

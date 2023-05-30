@@ -18,7 +18,8 @@ Usage: node index.js [options] bucketName
     -V, --version          output the version number
     -H, --host [host]      specify the host (default: localhost)
     -p, --port [port]      specify the post (default: 8098)
-    -f, --file [FileName]  specify the file name (default: [bucket].json)
     -i, --import           import mode (instead of reading from bucket entries will be written to bucket)
     -c, --concurrency      specify the concurrency (default: 20)
+    -O, --only-keys        export Only keys without data
+    -f, --file [FileName]  specify the file name (default: [bucket[_keys]].json)
 ````
